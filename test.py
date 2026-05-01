@@ -21,7 +21,7 @@ kappa = kernel_kappa(s_range)
 
 # 3. Estímulos de entrada
 # Corrente constante
-I = np.ones_like(t) * 15 
+I = np.ones_like(t) * 25 
 # Trem de pulsos (Spikes de entrada) - imagine um spike no tempo 20ms
 S = np.zeros_like(t)
 S[int(20/dt)] = 1/dt 

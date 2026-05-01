@@ -1,5 +1,5 @@
 from routes.processing import bp_processing
-from extensions import db, migrate
+from extensions import db, migrate, marshm
 from utils.response import req_response
 from flask import Flask
 
@@ -8,7 +8,8 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
-
+    marshm.init_app(app)
+    
     @app.errorhandler(404)
     def handle_404(err):
         return req_response(
