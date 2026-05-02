@@ -10,7 +10,7 @@ class NeuronSchema(marshm.SQLAlchemyAutoSchema):
         
     id = marshm.auto_field()
     tt = marshm.auto_field()
-    last_I = marshm.auto_field()
+    w = marshm.auto_field()
 
 class LayerSchema(marshm.SQLAlchemyAutoSchema):
     class Meta:
@@ -26,4 +26,4 @@ class ParamSchema(marshm.SQLAlchemyAutoSchema):
         load_instance=True
     
     id = marshm.auto_field()
-    params = marshm.Nested(LayerSchema, many=True)
+    layers = marshm.Nested(LayerSchema, many=True)

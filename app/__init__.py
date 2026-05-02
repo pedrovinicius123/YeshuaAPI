@@ -1,11 +1,13 @@
-from routes.processing import bp_processing
-from extensions import db, migrate, marshm
-from utils.response import req_response
+from app.routes.processing import bp_processing
+from app.extensions import db, migrate, marshm
+from app.utils.response import req_response
 from flask import Flask
+from app.config import Config
 
 def create_app():
     app = Flask(__name__)
-
+    app.config.from_object(Config)
+    
     db.init_app(app)
     migrate.init_app(app, db)
     marshm.init_app(app)

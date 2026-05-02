@@ -2,7 +2,6 @@ from flask.blueprints import Blueprint
 from flask import request
 from ..controllers.processing_controller import (
     return_model_params,
-    add_model_param,
     proc,
     gn
 )
@@ -21,4 +20,4 @@ def receive_input(id):
 
 @bp_processing.route("/", methods=["POST"])
 def generate_model():
-    return gn(request.args)
+    return gn(request.json)

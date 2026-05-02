@@ -31,7 +31,17 @@ def lif_differential(I, T_total):
         
         # Disparo e reset
         if u[i] >= theta:
-            S[i] = 1
-            u[i] = u_reset
+            return u
     
-    return S, u
+    return 0
+
+def update_stdp(w, t_pre, t_post, A_plus=0.1, A_minus=0.12, tau_stdp=20.0):
+    dt = t_post - t_pre
+    if dt > 0:
+        # Potencialização (LTP)
+        dw = A_plus * np.exp(-dt / tau_stdp)
+    else:
+        # Depressão (LTD)
+        dw = -A_minus * np.exp(dt / tau_stdp)
+    return w + dw
+
