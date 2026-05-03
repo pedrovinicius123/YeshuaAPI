@@ -17,48 +17,37 @@ import time
 class Cluster(threading.Thread):
     def __init__(self, id, nlayers:int=0, conn_prob:float=0.5, n_neurons_per_layer:int=10, **kwargs):
         self.app = current_app._get_current_object()
-        self.id = id
-        
-        self.layers = [LIFLayer(ns=[LIF() for _ in range(n_neurons_per_layer)], conns=None) for _ in range(nlayers)]
-        print(len(self.layers))
+        p = Params.query.order_by(Params.id.desc()).first()
+        self.id = p.id if p else 1
         self.g = nx.Graph()
         
         for i in range(nlayers):
             for j in range(nlayers):
                 if i != j and random.random() > 1-conn_prob:
                     self.g.add_edge(i, j)
-                    
-        for i, l in enumerate(self.layers):
-            l.conns = self.g.neighbors(i)
+        
+        self.layers = [LIFLayer(ns=[LIF() for _ in range(n_neurons_per_layer)], conns=list(self.g.neighbors(i))) for i in range(nlayers)]
+        print(len(self.layers))             
+        self.save()
         threading.Thread.__init__(self)
     
     @staticmethod      
     def load(obj):
-        def get_layer_params(layers):
-            tot = []
-            for layer in layers:
-                ls = LIFLayer(ns=None, conns=None)
-                ls.id = layer.id
-                ls.neurons = get_neuron_params(layer.neurons)
-                ls.conns = map(lambda x: x.id, layer.conns)
-                tot.append(ls)
-                
-            return tot
-                
-        def get_neuron_params(neurons):
-            ns = []
-            for neuron in neurons:
+        print(obj.layers[10].neurons)
+        instance = Cluster(obj.id, 0, 0, 0)
+        for i in range(len(obj.layers)):
+            print(i, obj.layers[i].neurons)
+            ls = LIFLayer(ns=[], conns=list(map(lambda x: x.id, obj.layers[i].conns)))
+            ls.id = obj.layers[i].id
+            ls.conns = [c.id for c in obj.layers[i].conns]                          
+            for neuron in obj.layers[i].neurons:
                 n = LIF()
                 n.id = neuron.id
                 n.tt = neuron.tt
                 n.w = neuron.w
-                ns.append(n)
+                ls.neurons.append(n)
                 
-            return ns
-        
-        instance = Cluster(obj.id, 0, 0, 0)
-        instance.layers = get_layer_params(obj.layers)
-        print(instance.layers)
+            instance.layers.append(ls)                        
         return instance
     
     def save(self):
@@ -67,26 +56,28 @@ class Cluster(threading.Thread):
             if not instance:
                 instance = Params(id=self.id)
                 db.session.add(instance)
-                db.session.commit()  # Ensure instance has an ID
+                
 
             # Clear existing layers and their relationships
             for layer in instance.layers:
                 db.session.delete(layer)
-            db.session.commit()
 
             # Create new layer models
             layer_models = []
+            #print("LAYERS", self.layers)
             for lif_layer in self.layers:
                 layer_model = Layer(param_id=instance.id)
                 db.session.add(layer_model)
-                db.session.commit()  # Get layer ID
+                db.session.flush()  # Get the layer ID without committing
 
                 # Add neurons
                 for lif_neuron in lif_layer.neurons:
-                    neuron_model = Neuron(layer_id=layer_model.id, tt=lif_neuron.tt, last_I=lif_neuron.last_I)
+                    neuron_model = Neuron(layer_id=layer_model.id, tt=lif_neuron.tt, w=lif_neuron.w)
                     db.session.add(neuron_model)
-
+                
                 layer_models.append(layer_model)
+
+            db.session.flush()  # Flush before setting connections
 
             # Set connections
             for i, lif_layer in enumerate(self.layers):
@@ -100,12 +91,12 @@ class Cluster(threading.Thread):
     
     def run(self):
         running = True
-        while running:
-            time.sleep(.5)
+        while running:            
             for layer in self.layers:
                 if not layer.is_alive:
                     layer.start()
                     
             with self.app.app_context():
                 self.save()
+            time.sleep(30)
             

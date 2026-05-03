@@ -10,7 +10,6 @@ class LIF:
 
         self.id = nid
         self.tt = 30
-        self.last_I = 0
         self.last_timestamp = time.time()
         self.w = {}
         

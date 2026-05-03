@@ -13,15 +13,29 @@ params_schema = ParamSchema(many=True)
 param_schema = ParamSchema()
 
 def return_model_params(id):
-    cluster = Cluster.load(Params.query.get_or_404(id))
-    return req_response(message="Model params", data={k: v.__repr__() for k, v in cluster.__dict__.items()})
+    with current_app.app_context():
+        p = Params.query.get_or_404(id)
+        print(p.layers)
+        cluster = Cluster.load(p)
+        return req_response(message="Model params", data={k: v.__repr__() for k, v in cluster.__dict__.items()})
 
 def proc(data, id):
-    cluster = Cluster.load(Params.query.get_or_404(id))
-    for layer in data.get("layers", []):
-        cluster.layers[layer].req = data.get("output", [])
+    with current_app.app_context():
+        p = Params.query.get_or_404(id)
+        print(p.layers)
+        cluster = Cluster.load(p)
+        cluster.start()
+        
+        for layer in data.get("layers", []):
+            cluster.layers[layer].req = data.get("output", [])
 
-    return req_response(message="Model processed data successfully", data={k: v.__repr__() for k, v in cluster.__dict__.items()})
+        return req_response(message="Model processed data successfully", data={k: v.__repr__() for k, v in cluster.__dict__.items()})
+
+def delete(id:int):
+    p = Params.query.get_or_404(id)
+    db.session.delete(p)
+    db.session.commit()
+    return req_response(message="CLUSTER DELETED")
 
 def gn(kwds):
     with current_app.app_context():

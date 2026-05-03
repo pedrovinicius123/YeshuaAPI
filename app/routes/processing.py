@@ -3,6 +3,7 @@ from flask import request
 from ..controllers.processing_controller import (
     return_model_params,
     proc,
+    delete,
     gn
 )
 
@@ -17,6 +18,10 @@ def get_model_params(id):
 def receive_input(id):
     data = request.json
     return proc(data, id)
+
+@bp_processing.route("/<int:id>", methods=["DELETE"])
+def delete_cluster(id):
+    return delete(id)
 
 @bp_processing.route("/", methods=["POST"])
 def generate_model():
