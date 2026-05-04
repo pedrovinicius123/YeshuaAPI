@@ -7,7 +7,6 @@ from ..utils.lif.neuron import LIF
 from ..extensions import db
 from ..models.params import Params
 from ..models.layer import Layer
-from ..models.neurons import Neuron
 import networkx as nx
 import random
 import threading
@@ -33,18 +32,18 @@ class Cluster(threading.Thread):
     
     @staticmethod      
     def load(obj):
-        print(obj.layers[10].neurons)
+        #print(obj.layers[10].neurons)
         instance = Cluster(obj.id, 0, 0, 0)
         for i in range(len(obj.layers)):
-            print(i, obj.layers[i].neurons)
+            print(i, len(obj.layers[i].neurons))
             ls = LIFLayer(ns=[], conns=list(map(lambda x: x.id, obj.layers[i].conns)))
             ls.id = obj.layers[i].id
-            ls.conns = [c.id for c in obj.layers[i].conns]                          
+            ls.conns = [c for c in obj.layers[i].conns] 
+                                  
             for neuron in obj.layers[i].neurons:
                 n = LIF()
-                n.id = neuron.id
-                n.tt = neuron.tt
-                n.w = neuron.w
+                n.tt = neuron.get("tt")
+                n.w = neuron.get("w")
                 ls.neurons.append(n)
                 
             instance.layers.append(ls)                        
@@ -61,6 +60,7 @@ class Cluster(threading.Thread):
             # Clear existing layers and their relationships
             for layer in instance.layers:
                 db.session.delete(layer)
+            db.session.commit()
 
             # Create new layer models
             layer_models = []
@@ -69,15 +69,18 @@ class Cluster(threading.Thread):
                 layer_model = Layer(param_id=instance.id)
                 db.session.add(layer_model)
                 db.session.flush()  # Get the layer ID without committing
-
+                layer_model.neurons = []
+                
                 # Add neurons
                 for lif_neuron in lif_layer.neurons:
-                    neuron_model = Neuron(layer_id=layer_model.id, tt=lif_neuron.tt, w=lif_neuron.w)
-                    db.session.add(neuron_model)
-                
+                    neuron_model = {
+                        "tt" : lif_neuron.tt,
+                        "w" : lif_neuron.w
+                    }
+                    
+                    layer_model.neurons.append(neuron_model)
                 layer_models.append(layer_model)
-
-            db.session.flush()  # Flush before setting connections
+            
 
             # Set connections
             for i, lif_layer in enumerate(self.layers):
@@ -86,14 +89,15 @@ class Cluster(threading.Thread):
                     connected_layer = layer_models[conn_index]
                     if connected_layer not in layer_model.conns:
                         layer_model.conns.append(connected_layer)
-
+                        
+            instance.layers = layer_models
             db.session.commit()
     
     def run(self):
         running = True
         while running:            
             for layer in self.layers:
-                if not layer.is_alive:
+                if not layer.is_alive():
                     layer.start()
                     
             with self.app.app_context():

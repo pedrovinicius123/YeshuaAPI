@@ -1,16 +1,6 @@
 from ..extensions import marshm
 from ..models.params import Params
 from ..models.layer import Layer
-from ..models.neurons import Neuron
-
-class NeuronSchema(marshm.SQLAlchemyAutoSchema):
-    class Meta:
-        model=Neuron
-        load_instance = True
-        
-    id = marshm.auto_field()
-    tt = marshm.auto_field()
-    w = marshm.auto_field()
 
 class LayerSchema(marshm.SQLAlchemyAutoSchema):
     class Meta:
@@ -18,7 +8,7 @@ class LayerSchema(marshm.SQLAlchemyAutoSchema):
         load_instance = True
         
     id = marshm.auto_field()
-    neurons = marshm.Nested(NeuronSchema, many=True)
+    neurons = marshm.auto_field()
 
 class ParamSchema(marshm.SQLAlchemyAutoSchema):
     class Meta:

@@ -30,31 +30,51 @@ class LIFLayer(threading.Thread):
     def run(self):
         self.running = True
         while self.running:
-            if self.req:
-                with current_app._get_current_app().app_context(), lock:
+            if self.req:              
+                with lock:
                     tot = 0
+                    output = []
+                    timestamps = []
                     for neuron in self.neurons:
                         # TIMESTAMP
-                        current_timestamp = time.time()
+                        
                         
                         # INPUT FEATURES
                         inp = np.array(self.req.get("output", []))
                         ant = self.req.get("from")
-                                            
+                                   
+                                   
+                        tot = 0     
                         # PROCESSING
-                        for i, (we, n) in enumerate(zip(neuron.w[ant], self.req.get("from_neurons", []))):                   
-                            out = inp[i] * we
-                            tot += out
-                            prev_timestamp = n["last_timestamp"]                        
-                            neuron.w[ant][i] = update_stdp(neuron.w[ant][i], prev_timestamp, current_timestamp)                        
+                        if ant == None:
+                            for i in inp:
+                                tot += i
+                        elif not self.req.get("from_neurons_timestamp", []):
+                            current_timestamp = time.time()
+                            prev_timestamp = time.time()  
+                            print(neuron.w)  
+                            
+                            for i, we in enumerate(neuron.w[ant]):                   
+                                out = inp[i] * we
+                                tot += out                        
+                                neuron.w[ant][i] = update_stdp(neuron.w[ant][i], prev_timestamp, current_timestamp)
                                 
-                    output = [sum([neuron(u) for u in self.req.get("output", [])]) for neuron in self.neurons]
+                        else:
+                            for i, (we, t) in enumerate(zip(neuron.w[ant], self.req.get("from_neurons_timestamp"))):
+                                out = inp[i] * we
+                                tot += out             
+                                prev_timestamp = t          
+                                neuron.w[ant][i] = update_stdp(neuron.w[ant][i], prev_timestamp, neuron.last_timestamp)
+                        
+                        tot = neuron(tot)
+                        output.append(tot)
+                        timestamps.append(neuron.last_timestamp)
+                        
                     output_json = {
                         "from":self.id,
-                        "from_neurons": [{k:v for k, v in neuron.__dict__.items() if k != "w"} for neuron in self.neurons],
+                        "from_neurons_timestamp": timestamps,
                         "layers": list(self.conns),
                         "output":output,
-                        "timestamp":time.time()
                     }
                     
                     print(output_json)

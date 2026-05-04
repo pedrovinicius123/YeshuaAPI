@@ -26,7 +26,7 @@ def lif_differential(I, T_total):
     
     for i in range(1, n_steps):
         # Equação do LIF: tau_m * du/dt = -(u - u_rest) + R*I
-        du = (-(u[i-1] - u_rest) + R * I[i-1]) * dt / tau_m
+        du = (-(u[i-1] - u_rest) + R * I) * dt / tau_m
         u[i] = u[i-1] + du
         
         # Disparo e reset

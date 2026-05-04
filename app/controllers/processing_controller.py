@@ -15,7 +15,7 @@ param_schema = ParamSchema()
 def return_model_params(id):
     with current_app.app_context():
         p = Params.query.get_or_404(id)
-        print(p.layers)
+        #print(p.layers)
         cluster = Cluster.load(p)
         return req_response(message="Model params", data={k: v.__repr__() for k, v in cluster.__dict__.items()})
 
@@ -24,10 +24,12 @@ def proc(data, id):
         p = Params.query.get_or_404(id)
         print(p.layers)
         cluster = Cluster.load(p)
-        cluster.start()
+        if not cluster.is_alive():
+            cluster.start()
         
         for layer in data.get("layers", []):
-            cluster.layers[layer].req = data.get("output", [])
+            print(data)
+            cluster.layers[layer].req = data
 
         return req_response(message="Model processed data successfully", data={k: v.__repr__() for k, v in cluster.__dict__.items()})
 

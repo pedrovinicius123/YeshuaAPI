@@ -17,7 +17,7 @@ def create_app():
         return req_response(
             status_code=404,
             message="Resource not found",
-            data=err,
+            data=err.__repr__(),
         )
     
     app.register_blueprint(bp_processing)
